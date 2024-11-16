@@ -1,0 +1,11 @@
+# Ignore virtual environments
+venv/
+env/
+
+# Python bytecode
+__pycache__/
+
+# Flask-related files
+*.db
+*.sqlite3
+instance/

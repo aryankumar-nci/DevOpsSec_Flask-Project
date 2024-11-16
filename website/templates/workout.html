@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Workout{% endblock %}
+
+{% block content %}
+<h2>Lets workout,  {{ user.username }}!</h2>
+
+<!-- Form for adding a new workout -->
+<form method="POST" class="mb-4">
+  <div class="form-group">
+    <label for="exercise_name">Exercise</label>
+    <select id="exercise_name" name="exercise_name" class="form-control" required>
+      <option value="" disabled selected>Select an exercise</option>
+      <option value="Bench Press">Bench Press</option>
+      <option value="Squat">Squat</option>
+      <option value="Deadlift">Deadlift</option>
+      <option value="Overhead Press">Overhead Press</option>
+      <!-- Add more exercise options as needed -->
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="sets">Number of Sets</label>
+    <input type="number" id="sets" name="sets" class="form-control" min="1" placeholder="Enter number of sets" required>
+  </div>
+  <div class="form-group">
+    <label for="weight">Weight</label>
+    <input type="number" step="0.1" id="weight" name="weight" class="form-control" placeholder="Enter weight" required>
+  </div>
+  <button type="submit" class="btn btn-primary mt-2">Add Workout</button>
+</form>
+
+<!-- Table displaying added workouts -->
+<h3>Your Workouts</h3>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Exercise</th>
+      <th>Sets</th>
+      <th>Weight</th>
+      <th>Date Added</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for workout in workouts %}
+    <tr>
+      <td>{{ workout.exercise_name }}</td>
+      <td>{{ workout.sets }}</td>
+      <td>{{ workout.weight }}</td>
+      <td>{{ workout.date_created.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td>
+        <a href="{{ url_for('views.edit_workout', id=workout.id) }}" class="btn btn-warning btn-sm">Edit</a>
+        <a href="{{ url_for('views.delete_workout', id=workout.id) }}" class="btn btn-danger btn-sm">Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
