@@ -13,10 +13,12 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Set up SSH Key
+    - name: Debug SSH Key
       run: |
         echo "$KEY" > deploy_key.pem
         chmod 600 deploy_key.pem
+        ls -l deploy_key.pem  # Check if the file exists
+        cat deploy_key.pem | head -n 5  # Verify the first 5 lines of the key
 
     - name: Deploy to EC2
       env:
