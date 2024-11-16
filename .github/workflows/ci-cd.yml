@@ -1,37 +1,47 @@
-name: CI/CD Pipeline for Flask
+name: Deploy to EC2 🚀
 
 on:
   push:
     branches:
-      - main  # Trigger the workflow on pushes to the main branch
+      - "16-CICD-PYTHON-WEBAPP" # This triggers the workflow on push to any branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout current branch 
+        uses: actions/checkout@v2
 
-    - name: Set up SSH Key
-      run: |
-        echo "$KEY" > deploy_key.pem
-        chmod 600 deploy_key.pem
+      - name: Set up SSH key and whitelist EC2 IP address 
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Deploy to EC2
-      env:
-        HOST: ${{ secrets.EC2_HOST }}
-        USER: ${{ secrets.EC2_USER }}
-        KEY: ${{ secrets.EC2_SSH_KEY }}
-      run: |
-        ssh -o StrictHostKeyChecking=no -i deploy_key.pem $USER@$HOST << EOF
-          echo "Pulling latest code..."
-          cd /home/ubuntu/DevOpsSec_Flask-Project
-          git pull origin main
-          echo "Activating virtual environment and installing dependencies..."
-          source venv/bin/activate
-          pip install -r requirements.txt
-          echo "Restarting application..."
-          sudo systemctl restart myflaskapp
-          echo "Deployment completed!"
-        EOF
+      - name: Create .env file dynamically 
+        env:
+          ENV: ${{ secrets.ENV }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+        run: |
+          echo "ENV=${ENV}" >> env
+          echo "EC2_USERNAME=${EC2_USERNAME}" >> env
+          
+
+      - name: Copy files to remote server 
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+        run: |
+          scp -r * $EC2_USERNAME@$EC2_HOST:/home/ubuntu/
+
+      - name: Run Bash Script To Delpoy App 
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "chmod +x ./deploy.sh && ./deploy.sh"
+
+      - name: Clean up SSH key 
+        if: always()
+        run: rm -f ~/.ssh/id_rsa
