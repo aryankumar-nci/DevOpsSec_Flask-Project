@@ -3,53 +3,40 @@ name: Flask CI/CD Pipeline
 on:
   push:
     branches:
-      - main  
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout the latest code
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Set up Python 3.12
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.12.3'
 
-    # Step 3: SSH into the EC2 instance and deploy
     - name: Deploy to EC2
       env:
-        SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         EC2_HOST: ${{ secrets.EC2_HOST }}
       run: |
-        # Set up SSH configuration
         mkdir -p ~/.ssh
         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
 
         # SSH into EC2 and execute deployment steps
-        ssh -i ~/.ssh/id_rsa ubuntu@$EC2_HOST << 'EOF'
-          # Navigate to project directory
+        ssh -tt -i ~/.ssh/id_rsa ubuntu@$EC2_HOST << 'EOF'
           cd ~/flask_app/DevOpsSec_Flask-Project
-
-          # Pull latest changes
           git pull origin main
-
-          # Set up or activate virtual environment
           if [ ! -d "venv" ]; then
             python3 -m venv venv
           fi
           source venv/bin/activate
-
-          # Install dependencies
           pip install -r requirements.txt
-
-          # Restart the Flask app
           pkill -f gunicorn || true
           nohup gunicorn --bind 0.0.0.0:5000 app:app &
         EOF
