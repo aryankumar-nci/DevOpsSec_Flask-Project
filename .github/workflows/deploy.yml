@@ -1,42 +1,35 @@
-name: Flask CI/CD Pipeline
-
+name: Deploy app to AWS EC2
 on:
   push:
     branches:
       - main
 
+concurrency:
+  group: main
+  cancel-in-progress: true
+
 jobs:
   deploy:
+    name: Deploy to AWS EC2
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12.3'
-
-    - name: Deploy to EC2
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        EC2_HOST: ${{ secrets.EC2_HOST }}
-      run: |
-        mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
-
-        # SSH into EC2 and execute deployment steps
-        ssh -tt -i ~/.ssh/id_rsa ubuntu@$EC2_HOST << 'EOF'
-          cd ~/flask_app/DevOpsSec_Flask-Project
-          git pull origin main
-          if [ ! -d "venv" ]; then
-            python3 -m venv venv
-          fi
-          source venv/bin/activate
-          pip install -r requirements.txt
-          pkill -f gunicorn || true
-          nohup gunicorn --bind 0.0.0.0:5000 app:app &
-        EOF
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/github
+          chmod 600 ~/.ssh/github
+          cat >>~/.ssh/config <<END
+          Host target
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/github
+            LogLevel ERROR
+            StrictHostKeyChecking no
+          END
+      - name: Run deploy
+        run: |
+          ssh target "ls"
