@@ -33,4 +33,4 @@ jobs:
           END
       - name: Run deploy
         run: |
-          ssh target "rm -rf flask_app/ && git clone https://github.com/aryankumar-nci/DevOpsSec_Flask-Project.git flask_app && cd flask_app && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && pip install  gunicorn && flask run --host=0.0.0.0 --port=5000"
+          ssh target "rm -rf flask_app/ && git clone https://github.com/aryankumar-nci/DevOpsSec_Flask-Project.git flask_app && cd flask_app && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && pip install  gunicorn && sudo systemctl restart gunicorn"
